@@ -163,23 +163,19 @@ namespace Connect4Solver
             {
                 for (int k = height - 1; k >= 0; k--)
                 {
-                    if(i > 2)//means they can win left
+                    if (state.grid[i][k] == player)//dont waste time if this isnt their piece
                     {
-                        if (CheckLeft(state, i, k, out counter, player))
-                        {//They can win left, we need to move there
-                            x = counter;
-                            return true;
-                        }
-                        else
-                        {//They can win left if we move there, disallow this column
-                            if(counter != -1)
+                        if (k > 2)//they can win up
+                        {
+                            if (CheckUp(state, i, k, out counter, player))
                             {
-                                disallowedMoves.Add(counter);
+                                x = counter;
+                                return true;
                             }
                         }
-                        if(k > height - 4)//and up
+                        if (i > 2)//means they can win left
                         {
-                            if (CheckUpLeft(state, i, k, out counter, player))
+                            if (CheckLeftSplit(state, i, k, out counter, player))
                             {//They can win left, we need to move there
                                 x = counter;
                                 return true;
@@ -191,34 +187,49 @@ namespace Connect4Solver
                                     disallowedMoves.Add(counter);
                                 }
                             }
-                        }
-                    }
-                    if(i < width - 4)//means they can win right
-                    {
-                        if (CheckRight(state, i, k, out counter, player))
-                        {//They can win Right, we need to move there
-                            x = counter;
-                            return true;
-                        }
-                        else
-                        {//They can win left if we move there, disallow this column
-                            if (counter != -1)
+                            if (k > height - 4)//and up
                             {
-                                disallowedMoves.Add(counter);
+                                if (CheckUpLeft(state, i, k, out counter, player))
+                                {//They can win left, we need to move there
+                                    x = counter;
+                                    return true;
+                                }
+                                else
+                                {//They can win left if we move there, disallow this column
+                                    if (counter != -1)
+                                    {
+                                        disallowedMoves.Add(counter);
+                                    }
+                                }
                             }
                         }
-                        if (k > height - 4)//and up
+                        if (i < width - 4)//means they can win right
                         {
-                            if (CheckUpRight(state, i, k, out counter, player))
+                            if (CheckRightSplit(state, i, k, out counter, player))
                             {//They can win Right, we need to move there
                                 x = counter;
                                 return true;
                             }
                             else
-                            {//They can win left if we move there, disallow this column
+                            {//They can win right if we move there, disallow this column
                                 if (counter != -1)
                                 {
                                     disallowedMoves.Add(counter);
+                                }
+                            }
+                            if (k > height - 4)//and up
+                            {
+                                if (CheckUpRight(state, i, k, out counter, player))
+                                {//They can win Right, we need to move there
+                                    x = counter;
+                                    return true;
+                                }
+                                else
+                                {//They can win right if we move there, disallow this column
+                                    if (counter != -1)
+                                    {
+                                        disallowedMoves.Add(counter);
+                                    }
                                 }
                             }
                         }
@@ -230,7 +241,7 @@ namespace Connect4Solver
         }
 
         public static bool CheckMoveCanBeMade(Connect4Grid state, int x, int y)
-        {
+        {//im assuming that the spot in question is already known to be zero
             if(y == state.height -1)//piece is on the ground we can make the move
             {
                 return true;
@@ -260,78 +271,29 @@ namespace Connect4Solver
                 return false;
         }
 
-        public static bool CheckLeft(Connect4Grid state, int x, int y, out int counterMove/*This is x*/, int player)
-        {
-            counterMove = -1;
-            if ((x - 1) >= 0 && state.grid[x - 1][y] == player)
-            {
-                if ((x - 2) >= 0 && state.grid[x - 2][y] == player)
-                {
-                    if (CheckMoveCanBeMade(state, x - 3, y))
-                    {
-                        counterMove = x-3;
-                        return true;
-                    }
-                    else if (CheckMoveCanBeMade(state, x - 3, y + 1))
-                    {
-                        counterMove = x-3;
-                        return false;
-                    }
-                    else
-                        return false;
-                }
-                else
-                    return false;
-            }
-            else
-                return false;
-        }
-
-        public static bool CheckRight(Connect4Grid state, int x, int y, out int counterMove/*This is x*/, int player)
-        {
-            counterMove = -1;
-            if ((x + 1) < state.width && state.grid[x + 1][y] == player)
-            {
-                if ((x + 2) < state.width && state.grid[x + 2][y] == player)
-                {
-                    if (CheckMoveCanBeMade(state, x + 3, y))
-                    {
-                        counterMove = x+3;
-                        return true;
-                    }
-                    else if (CheckMoveCanBeMade(state, x + 3, y + 1))
-                    {
-                        counterMove = x+3;
-                        return false;
-                    }
-                    else
-                        return false;
-                }
-                else
-                    return false;
-            }
-            else
-                return false;
-        }
-
         public static bool CheckRightSplit(Connect4Grid state, int x, int y, out int counterMove/*This is x*/, int player)
         {
             counterMove = -1;
             if ((x + 1) < state.width && state.grid[x + 1][y] == player)
-            {//E E ? ?
+            {
                 if ((x + 2) < state.width && state.grid[x + 2][y] == player)
-                {//E E E ? 
-                    if (CheckMoveCanBeMade(state, x + 3, y))
-                    {
-                        counterMove = x + 3;
-                        return true;
+                {//E E E ?
+                    if ((x + 3) < state.width && state.grid[x + 3][y] == 0)
+                    {//E E E 0
+                        if (CheckMoveCanBeMade(state, x + 3, y))
+                        {
+                            counterMove = x + 3;
+                            return true;
+                        }
+                        else if (CheckMoveCanBeMade(state, x + 3, y + 1))
+                        {
+                            counterMove = x + 3;
+                            return false;
+                        }
+                        else
+                            return false;
                     }
-                    else if (CheckMoveCanBeMade(state, x + 3, y + 1))
-                    {
-                        counterMove = x + 3;
-                        return false;
-                    }
-                    else
+                    else//E E E P
                         return false;
                 }
                 else if ((x + 2) < state.width && state.grid[x + 2][y] != 0)//E E P/0 ?
@@ -340,8 +302,18 @@ namespace Connect4Solver
                 {//E E 0 ?
                     if ((x + 3) < state.width && state.grid[x + 3][y] == player)
                     {//E E 0 E
-                        counterMove = x + 2;
-                        return true;
+                        if (CheckMoveCanBeMade(state, x + 2, y))
+                        {
+                            counterMove = x + 2;//counter prevent split win
+                            return true;
+                        }
+                        else if (CheckMoveCanBeMade(state, x - 2, y + 1))
+                        {
+                            counterMove = x + 2;//disallow move
+                            return false;
+                        }
+                        else
+                            return false;
                     }
                     else//E E 0 P/0
                         return false;
@@ -355,8 +327,18 @@ namespace Connect4Solver
                 {//E 0 E ?
                     if ((x + 3) < state.width && state.grid[x + 3][y] == player)
                     {
-                        counterMove = x + 1;//Counter move to prevent split win
-                        return true;
+                        if (CheckMoveCanBeMade(state, x + 1, y))
+                        {
+                            counterMove = x + 1;//Counter move to prevent split win
+                            return true;
+                        }
+                        else if (CheckMoveCanBeMade(state, x - 1, y + 1))
+                        {
+                            counterMove = x + 1;//disallow move
+                            return false;
+                        }
+                        else
+                            return false;
                     }
                     else//E 0 E P/0
                         return false;
@@ -372,18 +354,23 @@ namespace Connect4Solver
             if ((x - 1) >= 0 && state.grid[x - 1][y] == player)
             {
                 if ((x - 2) >= 0 && state.grid[x - 2][y] == player)
-                {
-                    if (CheckMoveCanBeMade(state, x - 3, y))
-                    {
-                        counterMove = x - 3;
-                        return true;
+                {//E E E ?
+                    if ((x - 3) >= 0 && state.grid[x - 3][y] == 0)
+                    {//E E E 0
+                        if (CheckMoveCanBeMade(state, x - 3, y))
+                        {
+                            counterMove = x - 3;
+                            return true;
+                        }
+                        else if (CheckMoveCanBeMade(state, x - 3, y + 1))
+                        {
+                            counterMove = x - 3;
+                            return false;
+                        }
+                        else
+                            return false;
                     }
-                    else if (CheckMoveCanBeMade(state, x - 3, y + 1))
-                    {
-                        counterMove = x - 3;
-                        return false;
-                    }
-                    else
+                    else//E E E P
                         return false;
                 }
                 else if ((x - 2) >= 0 && state.grid[x - 2][y] != 0)//E E P/0 ?
@@ -392,8 +379,18 @@ namespace Connect4Solver
                 {//E E 0 ?
                     if ((x - 3) >= 0 && state.grid[x - 3][y] == player)
                     {//E E 0 E
-                        counterMove = x - 2;
-                        return true;
+                        if (CheckMoveCanBeMade(state, x - 2, y))
+                        {
+                            counterMove = x - 2;//counter prevent split win
+                            return true;
+                        }
+                        else if (CheckMoveCanBeMade(state, x - 2, y + 1))
+                        {
+                            counterMove = x - 2;//disallow move
+                            return false;
+                        }
+                        else
+                            return false;
                     }
                     else//E E 0 P/0
                         return false;
@@ -407,8 +404,18 @@ namespace Connect4Solver
                 {//E 0 E ?
                     if ((x - 3) >= 0 && state.grid[x - 3][y] == player)
                     {
-                        counterMove = x - 1;//Counter move to prevent split win
-                        return true;
+                        if (CheckMoveCanBeMade(state, x - 1, y))
+                        {
+                            counterMove = x - 1;//Counter move to prevent split win
+                            return true;
+                        }
+                        else if (CheckMoveCanBeMade(state, x - 1, y + 1))
+                        {
+                            counterMove = x - 1;//disallow move
+                            return false;
+                        }
+                        else
+                            return false;
                     }
                     else//E 0 E P/0
                         return false;
