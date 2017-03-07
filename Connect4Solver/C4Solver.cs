@@ -27,9 +27,12 @@ namespace Connect4Solver
         public Connect4Grid input;
         static void Main(string[] args)
         {
-            Console.Error.WriteLine("Start");
-            while(true)
+            Console.Error.WriteLine("Start Program");
+            while (true)
+            {
+                Console.Error.WriteLine("Start Move --------------------------------------------");
                 Run();
+            }
         }
 
         public static void Run()
@@ -37,7 +40,13 @@ namespace Connect4Solver
             //read stdin
             string input;
             input = Console.ReadLine();
-            Connect4Grid state = JsonConvert.DeserializeObject<Connect4Grid>(input);
+            Connect4Grid state = new Connect4Grid();
+            if (input != null)
+                state = JsonConvert.DeserializeObject<Connect4Grid>(input);
+            else
+            {
+                Environment.Exit(0);
+            }
 
             int enemy;
             if (state.player == 1)
@@ -47,27 +56,20 @@ namespace Connect4Solver
 
             if(CheckZero(state))//If there are no moves we will go to the center
             {
-                if(state.width % 2 == 0)//even
-                {
-                    Connect4Response response = new Connect4Response(state.width / 2);
-                    string strResponse = JsonConvert.SerializeObject(response);
-                    Console.WriteLine(strResponse);
-                    Console.Out.Flush();
-                }
-                else//odd
-                {
-                    Connect4Response response = new Connect4Response((state.width / 2) + 1);
-                    string strResponse = JsonConvert.SerializeObject(response);
-                    Console.WriteLine(strResponse);
-                    Console.Out.Flush();
-                }
+                Console.Error.WriteLine("Zero State Reported");
+                Connect4Response response = new Connect4Response(state.width / 2);
+                string strResponse = JsonConvert.SerializeObject(response);
+                Console.WriteLine(strResponse);
+                Console.Out.Flush();
             }
             else
             {//first we will check if there is a counter move needed.
                 int xCounter;
                 List<int> disallowedMoves = new List<int>();
+                Console.Error.WriteLine("Start Counter Move Check");
                 if (CounterMoveCheck(state, enemy, out xCounter, out disallowedMoves))
                 {//run counter move
+                    Console.Error.WriteLine("Making Counter Move at " + xCounter);
                     Connect4Response response = new Connect4Response(xCounter);
                     string strResponse = JsonConvert.SerializeObject(response);
                     Console.WriteLine(strResponse);
@@ -75,9 +77,11 @@ namespace Connect4Solver
                 }
                 else
                 {
+                    Console.Error.WriteLine("Checking win moves for player");
                     List<int> idealMoves = new List<int>();
                     if(CounterMoveCheck(state, state.player, out xCounter, out idealMoves))
                     {//Here we check if we can counter ourself(find a winning move), if so we make the move regardless of the banned moves because we win
+                        Console.Error.WriteLine("Making Win Move at " + xCounter);
                         Connect4Response response = new Connect4Response(xCounter);
                         string strResponse = JsonConvert.SerializeObject(response);
                         Console.WriteLine(strResponse);
@@ -100,10 +104,10 @@ namespace Connect4Solver
                                 }
                             }
                         }
-                        Console.Error.WriteLine("No Ideal Moves found");
+                        Console.Error.WriteLine("No Ideal Moves found, attempting to make a non banned move");
                         List<bool> allowedMoves = ValidColumns(state);
                         List<int> pickList = new List<int>();
-                        for(int i = 0; i < allowedMoves.Count; i++)//we will try to make a move here that isnt banned
+                        for (int i = 0; i < allowedMoves.Count; i++)//we will try to make a move here that isnt banned
                         {
                             int move;
                             while (true)
@@ -125,6 +129,7 @@ namespace Connect4Solver
                                 break;
                             }
                         }//If we make it past here then we just need to start guessing based on what moves are available.
+                        Console.Error.WriteLine("No Non Banned Moves found, making any moves that are left.");
                         pickList = new List<int>();
                         for (int i = 0; i < allowedMoves.Count; i++)
                         {
@@ -159,14 +164,16 @@ namespace Connect4Solver
             int height = state.height;
             int width = state.width;
             int counter;
-            for (int i = width - 1; i >= 0; i--)
+            for (int i = 0; i < width - 1 ; i++)
             {
                 for (int k = height - 1; k >= 0; k--)
                 {
                     if (state.grid[i][k] == player)//dont waste time if this isnt their piece
                     {
+                        Console.Error.WriteLine("Counter Move Check for piece at X: " + i + " Y: " + k + "---------------------");
                         if (k > 2)//they can win up
                         {
+                            Console.Error.WriteLine("Check Up");
                             if (CheckUp(state, i, k, out counter, player))
                             {
                                 x = counter;
@@ -175,6 +182,7 @@ namespace Connect4Solver
                         }
                         if (i > 2)//means they can win left
                         {
+                            Console.Error.WriteLine("Check Left");
                             if (CheckLeftSplit(state, i, k, out counter, player))
                             {//They can win left, we need to move there
                                 x = counter;
@@ -187,9 +195,10 @@ namespace Connect4Solver
                                     disallowedMoves.Add(counter);
                                 }
                             }
-                            if (k > height - 4)//and up
+                            if (k > 2)//and up
                             {
-                                if (CheckUpLeft(state, i, k, out counter, player))
+                                Console.Error.WriteLine("Check Up Left");
+                                if (CheckUpLeftSplit(state, i, k, out counter, player))
                                 {//They can win left, we need to move there
                                     x = counter;
                                     return true;
@@ -203,8 +212,9 @@ namespace Connect4Solver
                                 }
                             }
                         }
-                        if (i < width - 4)//means they can win right
+                        if (i < width - 3)//means they can win right
                         {
+                            Console.Error.WriteLine("Check Right");
                             if (CheckRightSplit(state, i, k, out counter, player))
                             {//They can win Right, we need to move there
                                 x = counter;
@@ -217,9 +227,10 @@ namespace Connect4Solver
                                     disallowedMoves.Add(counter);
                                 }
                             }
-                            if (k > height - 4)//and up
+                            if (k > 2)//and up
                             {
-                                if (CheckUpRight(state, i, k, out counter, player))
+                                Console.Error.WriteLine("Check Up Right");
+                                if (CheckUpRightSplit(state, i, k, out counter, player))
                                 {//They can win Right, we need to move there
                                     x = counter;
                                     return true;
@@ -246,7 +257,7 @@ namespace Connect4Solver
             {
                 return true;
             }
-            if (state.grid[x][y + 1] != 0)// check below the move if something is already there
+            else if (state.grid[x][y + 1] != 0)// check below the move if something is already there
             {
                 return true;
             }
@@ -259,10 +270,17 @@ namespace Connect4Solver
             counterMove = -1;
             if ((y - 1) >= 0 && state.grid[x][y - 1] == player)
             {
+                Console.Error.WriteLine("E E ? ?");
                 if ((y - 2) >= 0 && state.grid[x][y - 2] == player)
                 {
-                    counterMove = x;
-                    return true;
+                    Console.Error.WriteLine("E E E ?");
+                    if ((y - 3) >= 0 && state.grid[x][y - 3] == 0)
+                    {
+                        counterMove = x;
+                        return true;
+                    }
+                    else
+                        return false;
                 }
                 else
                     return false;
@@ -348,15 +366,95 @@ namespace Connect4Solver
             }
         }
 
+        public static bool CheckUpRightSplit(Connect4Grid state, int x, int y, out int counterMove/*This is x*/, int player)
+        {
+            counterMove = -1;
+            if ((x + 1) < state.width && (y - 1) >= 0 && state.grid[x + 1][y - 1] == player)
+            {
+                if ((x + 2) < state.width && (y - 2) >= 0 && state.grid[x + 2][y - 2] == player)
+                {//E E E ?
+                    if ((x + 3) < state.width && (y - 3) >= 0 && state.grid[x + 3][y - 3] == 0)
+                    {//E E E 0
+                        if (CheckMoveCanBeMade(state, x + 3, y - 3))
+                        {
+                            counterMove = x + 3;
+                            return true;
+                        }
+                        else if (CheckMoveCanBeMade(state, x + 3, y - 2))
+                        {
+                            counterMove = x + 3;
+                            return false;
+                        }
+                        else
+                            return false;
+                    }
+                    else//E E E P
+                        return false;
+                }
+                else if ((x + 2) < state.width && (y - 2) >= 0 && state.grid[x + 2][y - 2] != 0)//E E P/0 ?
+                    return false;//E E P ?
+                else
+                {//E E 0 ?
+                    if ((x + 3) < state.width && (y - 3) >= 0 && state.grid[x + 3][y - 3] == player)
+                    {//E E 0 E
+                        if (CheckMoveCanBeMade(state, x + 2, y - 2))
+                        {
+                            counterMove = x + 2;//counter prevent split win
+                            return true;
+                        }
+                        else if (CheckMoveCanBeMade(state, x - 2, y - 1))
+                        {
+                            counterMove = x + 2;//disallow move
+                            return false;
+                        }
+                        else
+                            return false;
+                    }
+                    else//E E 0 P/0
+                        return false;
+                }
+            }
+            else if ((x + 1) < state.width && (y - 1) >= 0 && state.grid[x + 1][y - 1] != 0)//opposite player
+                return false;//E P ? ?
+            else
+            {
+                if ((x + 2) < state.width && (y - 2) >= 0 && state.grid[x + 2][y - 2] == player)
+                {//E 0 E ?
+                    if ((x + 3) < state.width && (y - 3) >= 0 && state.grid[x + 3][y - 3] == player)
+                    {//E 0 E E
+                        if (CheckMoveCanBeMade(state, x + 1, y - 1))
+                        {
+                            counterMove = x + 1;//Counter move to prevent split win
+                            return true;
+                        }
+                        else if (CheckMoveCanBeMade(state, x + 1, y))
+                        {
+                            counterMove = x + 1;//disallow move
+                            return false;
+                        }
+                        else
+                            return false;
+                    }
+                    else//E 0 E P/0
+                        return false;
+                }
+                else//E 0 P/0 ?
+                    return false;
+            }
+        }
+
         public static bool CheckLeftSplit(Connect4Grid state, int x, int y, out int counterMove/*This is x*/, int player)
         {
             counterMove = -1;
             if ((x - 1) >= 0 && state.grid[x - 1][y] == player)
-            {
+            {//E E ? ?
+                Console.Error.WriteLine("E E ? ?");
                 if ((x - 2) >= 0 && state.grid[x - 2][y] == player)
                 {//E E E ?
+                    Console.Error.WriteLine("E E E ?");
                     if ((x - 3) >= 0 && state.grid[x - 3][y] == 0)
                     {//E E E 0
+                        Console.Error.WriteLine("E E E 0");
                         if (CheckMoveCanBeMade(state, x - 3, y))
                         {
                             counterMove = x - 3;
@@ -377,8 +475,10 @@ namespace Connect4Solver
                     return false;//E E P ?
                 else
                 {//E E 0 ?
+                    Console.Error.WriteLine("E E 0 ?");
                     if ((x - 3) >= 0 && state.grid[x - 3][y] == player)
                     {//E E 0 E
+                        Console.Error.WriteLine("E E 0 E");
                         if (CheckMoveCanBeMade(state, x - 2, y))
                         {
                             counterMove = x - 2;//counter prevent split win
@@ -402,8 +502,10 @@ namespace Connect4Solver
             {
                 if ((x - 2) >= 0 && state.grid[x - 2][y] == player)
                 {//E 0 E ?
+                    Console.Error.WriteLine("E 0 E ?");
                     if ((x - 3) >= 0 && state.grid[x - 3][y] == player)
-                    {
+                    {//E 0 E E
+                        Console.Error.WriteLine("E 0 E E");
                         if (CheckMoveCanBeMade(state, x - 1, y))
                         {
                             counterMove = x - 1;//Counter move to prevent split win
@@ -425,58 +527,81 @@ namespace Connect4Solver
             }
         }
 
-        public static bool CheckUpRight(Connect4Grid state, int x, int y, out int counterMove/*This is x*/, int player)
+        public static bool CheckUpLeftSplit(Connect4Grid state, int x, int y, out int counterMove/*This is x*/, int player)
         {
             counterMove = -1;
-            if ((x + 1) < state.width && (y - 1) > 0 && state.grid[x + 1][y - 1] == player)
+            if ((x - 1) >= 0 && (y - 1) >= 0 && state.grid[x - 1][y - 1] == player)
             {
-                if ((x + 2) < state.width && (y - 2) > 0 && state.grid[x + 2][y - 2] == player)
-                {
-                    if (CheckMoveCanBeMade(state, x + 3, y - 3))
-                    {
-                        counterMove = x + 3;
-                        return true;
+                if ((x - 2) >= 0 && (y - 2) >= 0 && state.grid[x - 2][y - 2] == player)
+                {//E E E ?
+                    if ((x - 3) >= 0 && (y - 3) >= 0 && state.grid[x - 3][y - 3] == 0)
+                    {//E E E 0
+                        if (CheckMoveCanBeMade(state, x - 3, y - 3))
+                        {
+                            counterMove = x - 3;
+                            return true;
+                        }
+                        else if (CheckMoveCanBeMade(state, x - 3, y - 2))
+                        {
+                            counterMove = x - 3;
+                            return false;
+                        }
+                        else
+                            return false;
                     }
-                    else if (CheckMoveCanBeMade(state, x + 3, y - 2))
-                    {
-                        counterMove = x + 3;
-                        return false;
-                    }
-                    else
+                    else//E E E P
                         return false;
                 }
+                else if ((x - 2) >= 0 && (y - 2) >= 0 && state.grid[x - 2][y - 2] != 0)//E E P/0 ?
+                    return false;//E E P ?
                 else
-                    return false;
-            }
-            else
-                return false;
-        }
-
-        public static bool CheckUpLeft(Connect4Grid state, int x, int y, out int counterMove/*This is x*/, int player)
-        {
-            counterMove = -1;
-            if ((x - 1) >= 0 && (y - 1) > 0 && state.grid[x - 1][y - 1] == player)
-            {
-                if ((x - 2) >= 0 && (y - 2) > 0 && state.grid[x - 2][y - 2] == player)
-                {
-                    if (CheckMoveCanBeMade(state, x - 3, y - 3))
-                    {
-                        counterMove = x - 3;
-                        return true;
+                {//E E 0 ?
+                    if ((x - 3) >= 0 && (y - 3) >= 0 && state.grid[x - 3][y - 3] == player)
+                    {//E E 0 E
+                        if (CheckMoveCanBeMade(state, x - 2, y - 2))
+                        {
+                            counterMove = x - 2;//counter prevent split win
+                            return true;
+                        }
+                        else if (CheckMoveCanBeMade(state, x - 2, y - 1))
+                        {
+                            counterMove = x - 2;//disallow move
+                            return false;
+                        }
+                        else
+                            return false;
                     }
-                    else if (CheckMoveCanBeMade(state, x - 3, y - 2))
-                    {
-                        counterMove = x - 3;
-                        return false;
-                    }
-                    else
+                    else//E E 0 P/0
                         return false;
                 }
-                else
+            }
+            else if ((x - 1) >= 0 && (y - 1) >= 0 && state.grid[x - 1][y - 1] != 0)//opposite player
+                return false;//E P ? ?
+            else
+            {
+                if ((x - 2) >= 0 && (y - 2) >= 0 && state.grid[x - 2][y - 2] == player)
+                {//E 0 E ?
+                    if ((x - 3) >= 0 && (y - 3) >= 0 && state.grid[x - 3][y - 3] == player)
+                    {//E 0 E E
+                        if (CheckMoveCanBeMade(state, x - 1, y - 1))
+                        {
+                            counterMove = x - 1;//Counter move to prevent split win
+                            return true;
+                        }
+                        else if (CheckMoveCanBeMade(state, x - 1, y))
+                        {
+                            counterMove = x - 1;//disallow move
+                            return false;
+                        }
+                        else
+                            return false;
+                    }
+                    else//E 0 E P/0
+                        return false;
+                }
+                else//E 0 P/0 ?
                     return false;
             }
-            else
-                return false;
         }
 
         public static List<bool> ValidColumns(Connect4Grid state)
@@ -502,9 +627,9 @@ namespace Connect4Solver
 
         public static bool CheckZero(Connect4Grid check)
         {
-            for (int k = 0; k < check.grid[check.grid.Count - 1].Count; k++)
+            for (int k = 0; k < check.grid.Count; k++)
             {
-                if (check.grid[check.grid.Count - 1][k] != 0)
+                if (check.grid[k][check.height - 1] != 0)
                 {
                     return false;
                 }
